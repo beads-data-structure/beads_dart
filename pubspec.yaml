@@ -1,0 +1,13 @@
+name: beads
+authors:
+- Maxim Zaks <maxim.zaks@gmail.com>
+description: Beads data structure for Dart
+homepage: https://github.com/beads-data-structure/beads_dart
+version: 0.1.0
+
+environment:
+  sdk: '>=1.24.0 <3.0.0'
+
+dev_dependencies:
+  test: '>=0.12.24+2 <2.0.0'
+  test_coverage: ^0.2.0
