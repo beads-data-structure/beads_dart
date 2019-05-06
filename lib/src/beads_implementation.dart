@@ -210,7 +210,7 @@ class BeadsSequence with IterableMixin<BeadValue> {
       return;
     }
     var lengthInBytes = value.lengthInBytes;
-    if (lengthInBytes <= 16) {
+    if (lengthInBytes < 16) {
       _prepareToAppend(lengthInBytes + 1);
       _addTag(_BeadType.tinyData);
       _addLengthAsTag(lengthInBytes);
@@ -412,7 +412,7 @@ class BeadsSequence with IterableMixin<BeadValue> {
   }
 
   _addLengthAsTag(int length) {
-    assert(length <= 16);
+    assert(length < 16);
     if (_elementCount.isEven) {
       _flagIndex = _cursor;
       _buffer.setUint8(_flagIndex, length);

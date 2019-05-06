@@ -512,15 +512,14 @@ void main() {
       ..addUTF16('Maxim Zaks')
       ..addUTF16('And the others', compacted: true);
 
-    var exceptionCatched = false;
+    var exceptionCached = false;
     try {
       beads1.append(beads2);
     } catch (e) {
-      print(e);
-      exceptionCatched = true;
+      exceptionCached = true;
     }
 
-    expect(exceptionCatched, true);
+    expect(exceptionCached, true);
   });
 
   test('Add two compacted utf16 string after another', () {
@@ -534,5 +533,30 @@ void main() {
       array.add(value.utf16String);
     }
     expect(array, ['Maxim Zaks', 'Some other people', '3', '-456']);
+  });
+
+  test('append buffer lower than 16 bytes, higher than 16 bytes and comapcted', (){
+
+    final data1 = Uint8List.fromList([0, 1 , 34, 67, 0, 0, 0, 0, 45, 98, 123, 201, 0, 0, 0]);
+    final beads1 = BeadsSequence()
+    ..addBuffer(data1.buffer);
+    expect(beads1.buffer.lengthInBytes, 18);
+
+    final data2 = Uint8List.fromList([0, 1 , 34, 67, 0, 0, 0, 0, 45, 98, 123, 201, 0, 0, 0]);
+    final beads2 = BeadsSequence()
+      ..addBuffer(data2.buffer, compacted: true);
+    // tiny buffers are not compacted
+    expect(beads2.buffer.lengthInBytes, 18);
+
+    final data3 = Uint8List.fromList([0, 1 , 34, 67, 0, 0, 0, 0, 45, 98, 123, 201, 0, 0, 0, 13]);
+    final beads3 = BeadsSequence()
+      ..addBuffer(data3.buffer);
+    expect(beads3.buffer.lengthInBytes, 20);
+
+    final data4 = Uint8List.fromList([0, 1 , 34, 67, 0, 0, 0, 0, 45, 98, 123, 201, 0, 0, 0, 13]);
+    final beads4 = BeadsSequence()
+      ..addBuffer(data4.buffer, compacted: true);
+    // compaction reduces the size by 25%
+    expect(beads4.buffer.lengthInBytes, 15);
   });
 }
