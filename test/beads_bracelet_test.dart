@@ -454,48 +454,4 @@ void main() {
     expect(newG.strings1, g.strings1);
     expect(newG.strings2, g.strings2);
   });
-
-  test('description', () {
-    final max1 = Person()
-      ..name = 'Max'
-      ..town = 'Berlin';
-    final max2 = Person2();
-    max2.bracelet = max1.bracelet;
-    print(max2.city); // Berli
-    print(max2.name); // null
-    print(max2.deprecated_name); // Max
-
-    final max3 = Person2()
-      ..name = (FullName()
-        ..firstName = 'Maxim'
-        ..lastName = 'Zaks')
-      ..city = 'Berlin';
-    final max4 = Person();
-    max4.bracelet = max3.bracelet;
-
-    print(max4.name); // null
-    print(max4.town); // Berlin
-  });
-}
-
-class Person with BeadsBracelet {
-  @BeadIndex(0)
-  String name;
-  @BeadIndex(1)
-  String town;
-}
-
-class FullName with BeadsBracelet {
-  String firstName;
-  String lastName;
-}
-
-class Person2 with BeadsBracelet {
-  @BeadIndex(0)
-  @deprecated
-  String deprecated_name;
-  @BeadIndex(1)
-  String city;
-  @BeadIndex(2)
-  FullName name;
 }
