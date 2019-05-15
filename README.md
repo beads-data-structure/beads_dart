@@ -174,3 +174,92 @@ print(beads3.first.data.asUint8List()); // => [0, 1, 34, 67, 0, 0, 0, 0, 45, 98,
 While adding buffer to beads a caller can set option `compacted` parameter to `true`. This parameter instructs Beads evaluate the buffer in chunks of 8 bytes. Every chunk is prepended with a bit mask byte, which reflects which byte in the chunk is bigger than 0. The bytes which are equal to 0 are not stored any more. This technique effectively adds 1byte every 8 bytes to the buffer, but also removes 0 values from the buffer. This means that a compacted buffer can be from 0.125 to 1.125 the size of initial buffer.
 
 In __Example 8__ we see that compaction reduced the overall size of the buffer by 5 bytes, there for we achieved 25% of compression.
+
+## Storing object graph
+Beads is designed to store values as a seuquence. However in our day to day work we often work with classes and objects. This is why Beads has a object serialisation strategy which is called __Beads Bracelet__.
+
+In order to convert an instance of the class to __Beads Bracelet__ you need to define a class with a `BeadsBracelet` mixin and annotate the fields which hold the data you want to serialise with `BeadIndex`.
+
+__Example 9:__
+```dart
+class A with BeadsBracelet {
+  @BeadIndex(0)
+  String name;
+  @BeadIndex(1)
+  int age;
+  @BeadIndex(2)
+  A friend;
+}
+
+var a1 = new A() .. name = 'Max' .. age = 37;
+var a2 = new A() .. name = 'Alex' .. age = 40 .. friend = a1;
+var a3 = A();
+a3.bracelet = a2.bracelet;
+
+print(a1.bracelet.buffer.asUint8List()); // [8, 6, 1, 3, 60, 77, 97, 120, 241, 37]
+print(a2.bracelet.buffer.asUint8List()); // [17, 12, 1, 6, 76, 65, 108, 101, 120, 1, 40, 1, 3, 60, 77, 97, 120, 241, 37]
+print(a3.bracelet.buffer.asUint8List()); // [17, 12, 1, 6, 76, 65, 108, 101, 120, 1, 40, 1, 3, 60, 77, 97, 120, 241, 37]
+print(a3.name); // Alex
+```
+
+`BeadsBracelet` mixin provides property `bracelet` with a getter and setter to our class.
+
+When we call the `bracelet` getter, we get an instance of `BeadsSequence` which holds all the data from the annotated fields. When we invoke the `bracelet` setter with a `BeadsSequence` instance, it overrides all the values with values stored in the sequence.
+
+This is a very easy to use and intuitive aproach for object graph serialisation and deserialisation. However it is based on runtime reflection. In the future it is imaginable to introduce a code geenration aprroach, which should be more run time efficient.
+
+We currently support following types to be serialisable field types:
+- `num` / `int` / `double`
+- `bool`
+- `String`
+- `ByteBuffer`
+- custom `enum` definitions
+- a class with `BeadsBracelet` mixin
+- `List` where value type is one of the above
+- `Map` where key is `num` / `int` / `double` / `String` and value is one of the above except `List`
+
+__Beads Bracelet__ is designed to be [forward](https://en.wikipedia.org/wiki/Forward_compatibility) and [backward](https://en.wikipedia.org/wiki/Backward_compatibility) compatible. However in order to achieve compatibility you need to follow some rules:
+1. It is ok to rename field names, because we store only the values in the order of `BeadIndex`.
+2. It is ok to introduce new fields as long as you use new index value in `BeadIndex`.
+3. It is ok to deprecate / remove fields as long as you ensure that their `BeadIndex` will not be reused later on.
+
+__Example 10:__
+```dart
+class Person with BeadsBracelet {
+  @BeadIndex(0)
+  String name;
+  @BeadIndex(1)
+  String town;
+}
+class FullName with BeadsBracelet {
+  String firstName;
+  String lastName;
+}
+class Person2 with BeadsBracelet {
+  @BeadIndex(0)
+  @deprecated
+  String deprecated_name;
+  @BeadIndex(1)
+  String city;
+  @BeadIndex(2)
+  FullName name;
+}
+
+final max1 = Person() .. name = 'Max' .. town = 'Berlin';
+final max2 = Person2();
+max2.bracelet = max1.bracelet;
+print(max2.city); // Berli
+print(max2.name); // null
+print(max2.deprecated_name); // Max
+
+final max3 = Person2() .. name = (FullName() .. firstName = 'Maxim' .. lastName = 'Zaks') .. city = 'Berlin';
+final max4 = Person();
+max4.bracelet = max3.bracelet;
+
+print(max4.name); // null
+print(max4.town); // Berlin
+```
+
+In __Example 10__ `Person2` is an evolution of the `Person` class (normally you would keep the class name). In `Person` we have two fields `name` and `town`. In the next version of `Person` we decided to rename `town` to `city` (which is a non breaking change) and we decided to chenge the type of the `name` moving it from a `String` to a dedicated class. This is normally a breaking change, but with __Beads Bracelet__ we can just rename the old `name` and introduce a new `name` field with desiered type and a new `BeadIndex` value.
+
+Speaking of `BeadIndex`, the `BeadIndex` values you provide should be contiguous as when a bracelet is created, an object will become a sequence of properties sorted by its index. If we have a gap between indexies, say we have two properties with `@BeadIndex(0)` and `@BeadIndex(3)`, than the beads sequence will have 4 elements, where element at index `1` and `2` will be a `null` value, which occupy 4bits in the buffer.

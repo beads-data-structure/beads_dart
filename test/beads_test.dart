@@ -512,14 +512,14 @@ void main() {
       ..addUTF16('Maxim Zaks')
       ..addUTF16('And the others', compacted: true);
 
-    var exceptionCached = false;
+    var exceptionCatched = false;
     try {
       beads1.append(beads2);
     } catch (e) {
-      exceptionCached = true;
+      exceptionCatched = true;
     }
 
-    expect(exceptionCached, true);
+    expect(exceptionCatched, true);
   });
 
   test('Add two compacted utf16 string after another', () {
@@ -558,5 +558,107 @@ void main() {
     final beads4 = BeadsSequence()..addBuffer(data4.buffer, compacted: true);
     // compaction reduces the size by 25%
     expect(beads4.buffer.lengthInBytes, 15);
+  });
+
+  test('Create little endian bead with 1000 elements', () {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 1000; i++) {
+      beads.add(i);
+    }
+    expect(beads.buffer.lengthInBytes, 2248);
+    var index = 0;
+    for (var bead in beads) {
+      expect(bead.number, index);
+      index++;
+    }
+  });
+
+  test('Create big endian bead with 1000 elements', () {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 1000; i++) {
+      beads.add(i);
+    }
+    expect(beads.buffer.lengthInBytes, 2248);
+    var index = 0;
+    for (var bead in beads) {
+      expect(bead.number, index);
+      index++;
+    }
+  });
+
+  test('Create little endian bead with 100_000 elements', () {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 100000; i++) {
+      beads.add(i);
+    }
+    expect(beads.buffer.lengthInBytes, 318680);
+    var index = 0;
+    for (var bead in beads) {
+      expect(bead.number, index);
+      index++;
+    }
+  });
+
+  test('Create big endian bead with 100_000 elements', () {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 100000; i++) {
+      beads.add(i);
+    }
+    expect(beads.buffer.lengthInBytes, 318680);
+    var index = 0;
+    for (var bead in beads) {
+      expect(bead.number, index);
+      index++;
+    }
+  });
+
+  test('Debug representation littel endian', () {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 5; i++) {
+      beads.add(i);
+    }
+    beads.addUTF8("Max");
+    beads.add(null);
+    expect(beads.debugRepresentation,
+        "[12|8][1](0)[1](1)[1](2)[1](3)[1](4)[12][3][77, 97, 120][15]");
+  });
+
+  test('Debug representation big endian', () {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 5; i++) {
+      beads.add(i);
+    }
+    beads.addUTF8("Max");
+    beads.add(null);
+    expect(beads.debugRepresentation,
+        "[8|12][1](0)[1](1)[1](2)[1](3)[1](4)[12][3][77, 97, 120][15]");
+  });
+
+  test('add 1000 byte buffer compacted', () {
+    final beads = BeadsSequence();
+    beads.addBuffer(Uint8List(1000).buffer, compacted: true);
+    beads.addBuffer(Uint8List(1000).buffer, compacted: true);
+    expect(beads.buffer.lengthInBytes, 264);
+    var beadsCount = 0;
+    for (var bead in beads) {
+      expect(bead.isCompactData, true);
+      expect(bead.data.lengthInBytes, 1000);
+      beadsCount++;
+    }
+    expect(beadsCount, 2);
+  });
+
+  test('add 100_000 byte buffer compacted', () {
+    final beads = BeadsSequence();
+    beads.addBuffer(Uint8List(100000).buffer, compacted: true);
+    beads.addBuffer(Uint8List(100000).buffer, compacted: true);
+    expect(beads.buffer.lengthInBytes, 25022);
+    var beadsCount = 0;
+    for (var bead in beads) {
+      expect(bead.isCompactData, true);
+      expect(bead.data.lengthInBytes, 100000);
+      beadsCount++;
+    }
+    expect(beadsCount, 2);
   });
 }

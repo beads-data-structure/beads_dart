@@ -124,7 +124,7 @@ class BeadsSequence with IterableMixin<BeadValue> {
     if ((intNumber - number).abs() <= tolerance) {
       if (intNumber.isNegative) {
         if (intNumber >= _min_u8) {
-          _addI8(number);
+          _addI8(intNumber);
         } else if (intNumber >= _min_u16) {
           _addI16(intNumber);
         } else if (intNumber >= _min_u32) {
@@ -134,7 +134,7 @@ class BeadsSequence with IterableMixin<BeadValue> {
         }
       } else {
         if (intNumber <= _max_u8) {
-          _addU8(number);
+          _addU8(intNumber);
         } else if (intNumber <= _max_u16) {
           _addU16(intNumber);
         } else if (intNumber <= _max_u32) {
@@ -253,17 +253,17 @@ class BeadsSequence with IterableMixin<BeadValue> {
       } else if (maxValue <= _max_u16) {
         _addU16(compactDataLength);
         _prepareToAppend(2);
-        _buffer.setUint16(_cursor, lengthInBytes);
+        _buffer.setUint16(_cursor, lengthInBytes, _endian);
         _cursor += 2;
       } else if (maxValue <= _max_u32) {
         _addU32(compactDataLength);
         _prepareToAppend(4);
-        _buffer.setUint32(_cursor, lengthInBytes);
+        _buffer.setUint32(_cursor, lengthInBytes, _endian);
         _cursor += 4;
       } else {
         _addU64(compactDataLength);
         _prepareToAppend(8);
-        _buffer.setUint32(_cursor, lengthInBytes);
+        _buffer.setUint32(_cursor, lengthInBytes, _endian);
         _cursor += 8;
       }
       _prepareToAppend(compactDataLength);
@@ -366,37 +366,64 @@ class BeadsSequence with IterableMixin<BeadValue> {
     } else if (_cursor <= _max_u15) {
       final bufferCopy = ByteData(_cursor + 4);
       if (_endian == Endian.little) {
-        bufferCopy.setUint16(0, _cursor);
-        bufferCopy.setUint16(1, _elementCount);
+        bufferCopy.setUint16(0, _cursor, _endian);
+        bufferCopy.setUint16(1, _elementCount, _endian);
       } else {
-        bufferCopy.setUint16(0, _elementCount);
-        bufferCopy.setUint16(1, _cursor);
+        bufferCopy.setUint16(0, _elementCount, _endian);
+        bufferCopy.setUint16(1, _cursor, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 4, length: _cursor);
       return bufferCopy.buffer;
     } else if (_cursor <= _max_u31) {
       final bufferCopy = ByteData(_cursor + 8);
       if (_endian == Endian.little) {
-        bufferCopy.setUint32(0, _cursor);
-        bufferCopy.setUint32(1, _elementCount);
+        bufferCopy.setUint32(0, _cursor, _endian);
+        bufferCopy.setUint32(1, _elementCount, _endian);
       } else {
-        bufferCopy.setUint32(0, _elementCount);
-        bufferCopy.setUint32(1, _cursor);
+        bufferCopy.setUint32(0, _elementCount, _endian);
+        bufferCopy.setUint32(1, _cursor, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 8, length: _cursor);
       return bufferCopy.buffer;
     } else {
       final bufferCopy = ByteData(_cursor + 16);
       if (_endian == Endian.little) {
-        bufferCopy.setUint64(0, _cursor);
-        bufferCopy.setUint64(1, _elementCount);
+        bufferCopy.setUint64(0, _cursor, _endian);
+        bufferCopy.setUint64(1, _elementCount, _endian);
       } else {
-        bufferCopy.setUint64(0, _elementCount);
-        bufferCopy.setUint64(1, _cursor);
+        bufferCopy.setUint64(0, _elementCount, _endian);
+        bufferCopy.setUint64(1, _cursor, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 16, length: _cursor);
       return bufferCopy.buffer;
     }
+  }
+
+  /// Returns a string which can be used for debug purposes.
+  /// It reflects the internal structure of the sequence in a more human readable way.
+  /// First two numbers inside of a `[]` represent the Beads sequence header dependent on endianness.
+  /// Bead values are represented by `[tagId](numeric value)`, or `[tagId][data length][comma separated u8 values]`.
+  /// A null value is represented only by `[15]` which is the number of the null tag.
+  /// Skip tags are not represented.
+  String get debugRepresentation {
+    final stringBuffer = StringBuffer();
+    List<String> parts = [];
+    if (_endian == Endian.little) {
+      parts.add("[${_cursor}|${_elementCount}]");
+    } else {
+      parts.add("[${_elementCount}|${_cursor}]");
+    }
+    for (var element in this) {
+      parts.add("[${element._beadType.index}]");
+      if (element.isData) {
+        parts.add("[${element._dataLength}]");
+        parts.add("${element.data.asUint8List()}");
+      } else if (element.isNil == false) {
+        parts.add("(${element.number})");
+      }
+    }
+    stringBuffer.writeAll(parts);
+    return stringBuffer.toString();
   }
 
   _addTag(_BeadType type) {
@@ -722,24 +749,24 @@ class _BeadsIterator implements Iterator<BeadValue> {
           _cursor += 1;
         }
       } else if (lengthType == _BeadType.u16) {
-        _dataLength = _buffer.getUint16(_cursor);
+        _dataLength = _buffer.getUint16(_cursor, _endian);
         _cursor += 2;
         if (_beadType == _BeadType.compactData) {
-          _unpackedDataLength = _buffer.getUint16(_cursor);
+          _unpackedDataLength = _buffer.getUint16(_cursor, _endian);
           _cursor += 2;
         }
       } else if (lengthType == _BeadType.u32) {
-        _dataLength = _buffer.getUint32(_cursor);
+        _dataLength = _buffer.getUint32(_cursor, _endian);
         _cursor += 4;
         if (_beadType == _BeadType.compactData) {
-          _unpackedDataLength = _buffer.getUint32(_cursor);
+          _unpackedDataLength = _buffer.getUint32(_cursor, _endian);
           _cursor += 4;
         }
       } else if (lengthType == _BeadType.u64) {
-        _dataLength = _buffer.getUint64(_cursor);
+        _dataLength = _buffer.getUint64(_cursor, _endian);
         _cursor += 8;
         if (_beadType == _BeadType.compactData) {
-          _unpackedDataLength = _buffer.getUint64(_cursor);
+          _unpackedDataLength = _buffer.getUint64(_cursor, _endian);
           _cursor += 8;
         }
       } else {
