@@ -667,4 +667,78 @@ void main() {
     }
     expect(beadsCount, 2);
   });
+
+  test('Stream tiny beads sequence little endian', () async {
+    final beads = BeadsSequence(endian: Endian.little)
+      ..add(1)
+      ..add(null)
+      ..addUTF8('Max');
+    var buffer = [];
+    await for (var b in beads.bufferStream()) {
+      buffer.addAll(b.asUint8List());
+    }
+    expect(buffer, [6, 4, 241, 1, 60, 77, 97, 120]);
+    expect(beads.buffer.asUint8List(), buffer);
+  });
+
+  test('Stream tiny beads sequence big endian', () async {
+    final beads = BeadsSequence(endian: Endian.big)
+      ..add(1)
+      ..add(null)
+      ..addUTF8('Max');
+    var buffer = [];
+    await for (var b in beads.bufferStream()) {
+      buffer.addAll(b.asUint8List());
+    }
+    expect(buffer, [4, 6, 241, 1, 60, 77, 97, 120]);
+    expect(beads.buffer.asUint8List(), buffer);
+  });
+
+  test('Stream small beads sequence little endian', () async {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 300; i++) {
+      beads.add(i);
+    }
+    var buffer = [];
+    await for (var b in beads.bufferStream()) {
+      buffer.addAll(b.asUint8List());
+    }
+    expect(beads.buffer.asUint8List(), buffer);
+  });
+
+  test('Stream small beads sequence big endian', () async {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 300; i++) {
+      beads.add(i);
+    }
+    var buffer = [];
+    await for (var b in beads.bufferStream()) {
+      buffer.addAll(b.asUint8List());
+    }
+    expect(beads.buffer.asUint8List(), buffer);
+  });
+
+  test('Stream big beads sequence little endian', () async {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 100000; i++) {
+      beads.add(i);
+    }
+    var buffer = [];
+    await for (var b in beads.bufferStream()) {
+      buffer.addAll(b.asUint8List());
+    }
+    expect(beads.buffer.asUint8List(), buffer);
+  });
+
+  test('Stream big beads sequence big endian', () async {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 100000; i++) {
+      beads.add(i);
+    }
+    var buffer = [];
+    await for (var b in beads.bufferStream()) {
+      buffer.addAll(b.asUint8List());
+    }
+    expect(beads.buffer.asUint8List(), buffer);
+  });
 }

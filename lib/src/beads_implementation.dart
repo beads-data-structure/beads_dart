@@ -1,9 +1,10 @@
+import 'dart:async' show Stream;
 import 'dart:collection' show IterableMixin;
 import 'dart:typed_data'
     show ByteData, Endian, ByteBuffer, Uint8List, Uint16List;
 import 'dart:convert' show utf8;
 
-import 'dart:math' show max;
+import 'dart:math' show max, min;
 
 import 'package:meta/meta.dart' show required;
 
@@ -363,10 +364,10 @@ class BeadsSequence with IterableMixin<BeadValue> {
       final bufferCopy = ByteData(bufferSize + 4);
       if (_endian == Endian.little) {
         bufferCopy.setUint16(0, bufferSize, _endian);
-        bufferCopy.setUint16(1, _elementCount, _endian);
+        bufferCopy.setUint16(2, _elementCount, _endian);
       } else {
         bufferCopy.setUint16(0, _elementCount, _endian);
-        bufferCopy.setUint16(1, bufferSize, _endian);
+        bufferCopy.setUint16(2, bufferSize, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 4, length: _cursor);
       return bufferCopy.buffer;
@@ -374,10 +375,10 @@ class BeadsSequence with IterableMixin<BeadValue> {
       final bufferCopy = ByteData(bufferSize + 8);
       if (_endian == Endian.little) {
         bufferCopy.setUint32(0, bufferSize, _endian);
-        bufferCopy.setUint32(1, _elementCount, _endian);
+        bufferCopy.setUint32(4, _elementCount, _endian);
       } else {
         bufferCopy.setUint32(0, _elementCount, _endian);
-        bufferCopy.setUint32(1, bufferSize, _endian);
+        bufferCopy.setUint32(4, bufferSize, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 8, length: _cursor);
       return bufferCopy.buffer;
@@ -385,13 +386,69 @@ class BeadsSequence with IterableMixin<BeadValue> {
       final bufferCopy = ByteData(bufferSize + 16);
       if (_endian == Endian.little) {
         bufferCopy.setUint64(0, bufferSize, _endian);
-        bufferCopy.setUint64(1, _elementCount, _endian);
+        bufferCopy.setUint64(8, _elementCount, _endian);
       } else {
         bufferCopy.setUint64(0, _elementCount, _endian);
-        bufferCopy.setUint64(1, bufferSize, _endian);
+        bufferCopy.setUint64(8, bufferSize, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 16, length: _cursor);
       return bufferCopy.buffer;
+    }
+  }
+
+  /// This function is similar to [buffer] getter with a difference that it returns a [Stream].
+  /// Use this function, if you don't want to create a big [ByteBuffer] upfront, but rather want to stream it in smaller chunks asynchronously.
+  /// The first item in the stream will be the header (for more details please read [buffer] getter documentation)
+  /// Further items in the stream will be the actual beads buffer breaken down into chunks smaller or as big as defined in [chunkSize] parameter.
+  Stream<ByteBuffer> bufferStream([int chunkSize = 64]) async* {
+    final bufferSize = _cursor == _elementCount ? _cursor + 1 : _cursor;
+    final elementCount = _elementCount;
+    if (bufferSize <= _max_u7) {
+      final header = ByteData(2);
+      if (_endian == Endian.little) {
+        header.setUint8(0, bufferSize);
+        header.setUint8(1, elementCount);
+      } else {
+        header.setUint8(0, elementCount);
+        header.setUint8(1, bufferSize);
+      }
+      yield header.buffer;
+    } else if (bufferSize <= _max_u15) {
+      final header = ByteData(4);
+      if (_endian == Endian.little) {
+        header.setUint16(0, bufferSize, _endian);
+        header.setUint16(2, elementCount, _endian);
+      } else {
+        header.setUint16(0, elementCount, _endian);
+        header.setUint16(2, bufferSize, _endian);
+      }
+      yield header.buffer;
+    } else if (bufferSize <= _max_u31) {
+      final header = ByteData(8);
+      if (_endian == Endian.little) {
+        header.setUint32(0, bufferSize, _endian);
+        header.setUint32(4, elementCount, _endian);
+      } else {
+        header.setUint32(0, elementCount, _endian);
+        header.setUint32(4, bufferSize, _endian);
+      }
+      yield header.buffer;
+    } else {
+      final header = ByteData(16);
+      if (_endian == Endian.little) {
+        header.setUint64(0, bufferSize, _endian);
+        header.setUint64(8, elementCount, _endian);
+      } else {
+        header.setUint64(0, elementCount, _endian);
+        header.setUint64(8, bufferSize, _endian);
+      }
+      yield header.buffer;
+    }
+    for (var i = 0; i < bufferSize; i += chunkSize) {
+      final currentChunkSize = min(chunkSize, bufferSize - i);
+      final chunk = ByteData(currentChunkSize);
+      _copy(from: _buffer, to: chunk, offsetFrom: i, length: currentChunkSize);
+      yield chunk.buffer;
     }
   }
 
