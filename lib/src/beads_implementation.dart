@@ -345,54 +345,50 @@ class BeadsSequence with IterableMixin<BeadValue> {
   /// In worst case scenario number of elements can be twice as big as beads length (e.g. if every element is a null or a skip)
   /// This is why we check byteLength against max_u7, max_u15 and max_u31
   ByteBuffer get buffer {
-    // Add skip element until the length of buffer is not equal to number of elelments.
     // This is needed because otherwise the reader would not be able to identify the endianness.
-    while (_cursor == _elementCount) {
-      _prepareToAppend(1);
-      _addTag(_BeadType.skip);
-    }
+    final bufferSize = _cursor == _elementCount ? _cursor + 1 : _cursor;
 
-    if (_cursor <= _max_u7) {
-      final bufferCopy = ByteData(_cursor + 2);
+    if (bufferSize <= _max_u7) {
+      final bufferCopy = ByteData(bufferSize + 2);
       if (_endian == Endian.little) {
-        bufferCopy.setUint8(0, _cursor);
+        bufferCopy.setUint8(0, bufferSize);
         bufferCopy.setUint8(1, _elementCount);
       } else {
         bufferCopy.setUint8(0, _elementCount);
-        bufferCopy.setUint8(1, _cursor);
+        bufferCopy.setUint8(1, bufferSize);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 2, length: _cursor);
       return bufferCopy.buffer;
-    } else if (_cursor <= _max_u15) {
-      final bufferCopy = ByteData(_cursor + 4);
+    } else if (bufferSize <= _max_u15) {
+      final bufferCopy = ByteData(bufferSize + 4);
       if (_endian == Endian.little) {
-        bufferCopy.setUint16(0, _cursor, _endian);
+        bufferCopy.setUint16(0, bufferSize, _endian);
         bufferCopy.setUint16(1, _elementCount, _endian);
       } else {
         bufferCopy.setUint16(0, _elementCount, _endian);
-        bufferCopy.setUint16(1, _cursor, _endian);
+        bufferCopy.setUint16(1, bufferSize, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 4, length: _cursor);
       return bufferCopy.buffer;
-    } else if (_cursor <= _max_u31) {
-      final bufferCopy = ByteData(_cursor + 8);
+    } else if (bufferSize <= _max_u31) {
+      final bufferCopy = ByteData(bufferSize + 8);
       if (_endian == Endian.little) {
-        bufferCopy.setUint32(0, _cursor, _endian);
+        bufferCopy.setUint32(0, bufferSize, _endian);
         bufferCopy.setUint32(1, _elementCount, _endian);
       } else {
         bufferCopy.setUint32(0, _elementCount, _endian);
-        bufferCopy.setUint32(1, _cursor, _endian);
+        bufferCopy.setUint32(1, bufferSize, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 8, length: _cursor);
       return bufferCopy.buffer;
     } else {
-      final bufferCopy = ByteData(_cursor + 16);
+      final bufferCopy = ByteData(bufferSize + 16);
       if (_endian == Endian.little) {
-        bufferCopy.setUint64(0, _cursor, _endian);
+        bufferCopy.setUint64(0, bufferSize, _endian);
         bufferCopy.setUint64(1, _elementCount, _endian);
       } else {
         bufferCopy.setUint64(0, _elementCount, _endian);
-        bufferCopy.setUint64(1, _cursor, _endian);
+        bufferCopy.setUint64(1, bufferSize, _endian);
       }
       _copy(from: _buffer, to: bufferCopy, offset: 16, length: _cursor);
       return bufferCopy.buffer;

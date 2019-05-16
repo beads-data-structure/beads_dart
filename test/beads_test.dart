@@ -5,12 +5,18 @@ import 'package:test/test.dart';
 import 'package:beads/beads.dart';
 
 void main() {
-  test('Add a null and 0 to beads', () {
+  test(
+      'Add a null and 0 to beads, also tests that number of bytes and number of elements isnot the same',
+      () {
     final beads = BeadsSequence(length: 0);
     beads.add(null);
-    expect(beads.buffer.asUint8List(), [1, 2, 15]);
+    expect(beads.buffer.asUint8List(), [2, 1, 15, 0]);
     beads.add(0);
-    expect(beads.buffer.asUint8List(), [3, 4, 15, 1, 0]);
+    expect(beads.buffer.asUint8List(), [3, 2, 31, 0, 0]);
+    beads.add(null);
+    expect(beads.buffer.asUint8List(), [4, 3, 31, 0, 15, 0]);
+    beads.add(null);
+    expect(beads.buffer.asUint8List(), [3, 4, 31, 0, 255]);
   });
 
   test('Add 20x null to exapnd buffer', () {
@@ -232,7 +238,7 @@ void main() {
 
   test('add buffer null', () {
     final beads = BeadsSequence()..addBuffer(null);
-    expect(beads.buffer.asUint8List(), [1, 2, 15]);
+    expect(beads.buffer.asUint8List(), [2, 1, 15, 0]);
   });
 
   test('add tiny utf8', () {
