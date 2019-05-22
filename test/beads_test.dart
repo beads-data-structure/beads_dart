@@ -741,4 +741,116 @@ void main() {
     }
     expect(beads.buffer.asUint8List(), buffer);
   });
+
+  test('Create new beads with 10 ints from beads buffer BE', () async {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 10; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 10);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
+
+  test('Create new beads with 10 ints from beads buffer LE', () async {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 10; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 10);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
+
+  test('Create new beads with 100 ints from beads buffer BE', () async {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 100; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 100);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
+
+  test('Create new beads with 100 ints from beads buffer LE', () async {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 100; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 100);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
+
+  test('Create new beads with 1000 ints from beads buffer BE', () async {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 1000; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 1000);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
+
+  test('Create new beads with 1000 ints from beads buffer LE', () async {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 1000; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 1000);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
+
+  test('Create new beads with 100_000 ints from beads buffer BE', () async {
+    final beads = BeadsSequence(endian: Endian.big);
+    for (var i = 0; i < 100000; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 100000);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
+
+  test('Create new beads with 100_000 ints from beads buffer LE', () async {
+    final beads = BeadsSequence(endian: Endian.little);
+    for (var i = 0; i < 100000; i++) {
+      beads.add(i);
+    }
+    final newBeads = BeadsSequence.from(beads.buffer);
+    expect(newBeads.length, 100000);
+    var i = 0;
+    for (var bead in newBeads) {
+      expect(bead.number, i);
+      i++;
+    }
+  });
 }

@@ -91,6 +91,69 @@ class BeadsSequence with IterableMixin<BeadValue> {
         _elementCount++;
       }
       _buffer = ByteData.view(value, 2);
+    } else if (length - 4 <= _max_u15) {
+      final byteData = value.asByteData();
+      final header1BE = byteData.getUint16(0, Endian.big);
+      final header2BE = byteData.getUint16(2, Endian.big);
+      final header1LE = byteData.getUint16(0, Endian.little);
+      final header2LE = byteData.getUint16(2, Endian.little);
+      if (header1LE == length - 4) {
+        _endian = Endian.little;
+        _cursor = header1LE;
+        _elementCount = header2LE;
+      } else if (header2BE == length - 4) {
+        _endian = Endian.big;
+        _cursor = header2BE;
+        _elementCount = header1BE;
+      } else {
+        throw "Invalid byte buffer, the header does not match the beads size";
+      }
+      if (_elementCount.isOdd) {
+        _elementCount++;
+      }
+      _buffer = ByteData.view(value, 4);
+    } else if (length - 8 <= _max_u31) {
+      final byteData = value.asByteData();
+      final header1BE = byteData.getUint32(0, Endian.big);
+      final header2BE = byteData.getUint32(4, Endian.big);
+      final header1LE = byteData.getUint32(0, Endian.little);
+      final header2LE = byteData.getUint32(4, Endian.little);
+      if (header1LE == length - 8) {
+        _endian = Endian.little;
+        _cursor = header1LE;
+        _elementCount = header2LE;
+      } else if (header2BE == length - 8) {
+        _endian = Endian.big;
+        _cursor = header2BE;
+        _elementCount = header1BE;
+      } else {
+        throw "Invalid byte buffer, the header does not match the beads size";
+      }
+      if (_elementCount.isOdd) {
+        _elementCount++;
+      }
+      _buffer = ByteData.view(value, 8);
+    } else {
+      final byteData = value.asByteData();
+      final header1BE = byteData.getUint64(0, Endian.big);
+      final header2BE = byteData.getUint64(8, Endian.big);
+      final header1LE = byteData.getUint64(0, Endian.little);
+      final header2LE = byteData.getUint64(8, Endian.little);
+      if (header1LE == length - 16) {
+        _endian = Endian.little;
+        _cursor = header1LE;
+        _elementCount = header2LE;
+      } else if (header2BE == length - 16) {
+        _endian = Endian.big;
+        _cursor = header2BE;
+        _elementCount = header1BE;
+      } else {
+        throw "Invalid byte buffer, the header does not match the beads size";
+      }
+      if (_elementCount.isOdd) {
+        _elementCount++;
+      }
+      _buffer = ByteData.view(value, 16);
     }
   }
 
