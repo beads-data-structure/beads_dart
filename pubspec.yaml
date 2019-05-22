@@ -1,7 +1,7 @@
 name: beads
 authors:
 - Maxim Zaks <maxim.zaks@gmail.com>
-description: Beads data structure for Dart
+description: This implementation covers two concepts. Beads Sequence - append only data structure which applies bit packing technuques to appended values. Beads Bracelet - a strategy to serialise a complex object as Beads Sequence.
 homepage: https://github.com/beads-data-structure/beads_dart
 version: 0.1.1
 
